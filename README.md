@@ -5,11 +5,19 @@ React + Vite + TypeScript, Tailwind CSS, [chess.js](https://github.com/jhlywa/ch
 [react-chessboard](https://github.com/Clariity/react-chessboard). Тёмная тема в стиле шахматных сайтов,
 адаптивная вёрстка (на телефоне — нижняя навигация и ходы касанием).
 
+## Открыть в браузере
+
+https://hoka1212.github.io/chess-trainer/
+
+Тренажёр перенесён из `hoka1212/Ver`, история изменений сохранена.
+Прогресс из прежней версии доступен в том же браузере: адрес сайта остаётся
+на домене `hoka1212.github.io`, а ключи сохранений не изменены.
+
 ## Запуск
 
 ```bash
-cd chess
-npm install
+cd chess-trainer
+npm ci
 npm run dev        # http://localhost:5173
 npm test           # проверка PGN-парсера и всей базы дебютов
 npm run build      # сборка в dist/ (относительные пути — работает в любой подпапке)
