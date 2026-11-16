@@ -5,7 +5,7 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Relative base so the build works both at / and under /Ver/chess/ on GitHub Pages.
+  // Relative base supports local previews and /chess-trainer/ on GitHub Pages.
   base: './',
   plugins: [react(), tailwindcss()],
   build: {
