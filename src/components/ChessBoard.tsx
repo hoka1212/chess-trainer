@@ -1,6 +1,12 @@
 import { Chess, type Square } from 'chess.js'
 import { useMemo, useState, type CSSProperties } from 'react'
-import { Chessboard, defaultPieces, type Arrow, type PieceDropHandlerArgs, type SquareHandlerArgs } from 'react-chessboard'
+import {
+  Chessboard,
+  defaultPieces,
+  type Arrow,
+  type PieceDropHandlerArgs,
+  type SquareHandlerArgs,
+} from 'react-chessboard'
 import { BOARD_THEMES, settingsStore } from '../store'
 import { MaterialBar } from './MaterialBar'
 import { useStore } from '../lib/storage'
@@ -93,7 +99,8 @@ export function ChessBoard({
     return onMove({ from, to })
   }
 
-  const ownPiece = (pieceType: string | undefined) => !!pieceType && pieceType[0] === canMoveColor && turn === canMoveColor
+  const ownPiece = (pieceType: string | undefined) =>
+    !!pieceType && pieceType[0] === canMoveColor && turn === canMoveColor
 
   const handleSquareClick = ({ piece, square }: SquareHandlerArgs) => {
     if (!interactive || pendingPromotion) return
@@ -125,7 +132,10 @@ export function ChessBoard({
         .board()
         .flat()
         .find((p) => p && p.type === 'k' && p.color === turn)
-      if (king) add(king.square, { background: 'radial-gradient(circle, rgba(255,40,40,0.9) 0%, rgba(230,30,30,0.55) 35%, rgba(200,0,0,0) 70%)' })
+      if (king)
+        add(king.square, {
+          background: 'radial-gradient(circle, rgba(255,40,40,0.9) 0%, rgba(230,30,30,0.55) 35%, rgba(200,0,0,0) 70%)',
+        })
     }
     if (selected) {
       add(selected, { backgroundColor: SELECTED })
@@ -143,7 +153,7 @@ export function ChessBoard({
     return styles
   }, [lastMove, chess, turn, selected, targets, highlights])
 
-  const promoColor = pendingPromotion ? chess.get(pendingPromotion.from as Square)?.color ?? 'w' : 'w'
+  const promoColor = pendingPromotion ? (chess.get(pendingPromotion.from as Square)?.color ?? 'w') : 'w'
 
   const board = (
     <div className={`relative select-none ${showMaterial ? 'aspect-square w-full' : 'board-frame'}`}>
@@ -183,6 +193,7 @@ export function ChessBoard({
                   <button
                     key={p}
                     type="button"
+                    aria-label={`Превратить пешку в ${{ q: 'ферзя', r: 'ладью', b: 'слона', n: 'коня' }[p]}`}
                     className="size-16 rounded-lg bg-surface-3 p-1 transition hover:bg-accent/30"
                     onClick={() => {
                       const move = { from: pendingPromotion.from, to: pendingPromotion.to, promotion: p }
@@ -196,7 +207,11 @@ export function ChessBoard({
                 )
               })}
             </div>
-            <button type="button" className="mt-2 w-full text-sm text-muted hover:text-fg" onClick={() => setPendingPromotion(null)}>
+            <button
+              type="button"
+              className="mt-2 w-full text-sm text-muted hover:text-fg"
+              onClick={() => setPendingPromotion(null)}
+            >
               Отмена
             </button>
           </div>

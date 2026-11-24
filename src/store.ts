@@ -2,6 +2,8 @@ import type { BotLevel } from './engine/levels'
 import type { CourseDef } from './lib/courses'
 import type { LineProgress } from './lib/srs'
 import { createStore, dayKey, withDefaults } from './lib/storage'
+import { learningStore } from './lib/learning'
+import { endingStore } from './lib/endgames'
 
 // ---------- Настройки ----------
 
@@ -76,7 +78,14 @@ export interface CoordData {
 }
 
 const DEFAULT_COORD: CoordData = {
-  prefs: { mode: 'sprint', sprintSeconds: 30, seriesLength: 20, perSquareSeconds: 5, side: 'white', showNotation: false },
+  prefs: {
+    mode: 'sprint',
+    sprintSeconds: 30,
+    seriesLength: 20,
+    perSquareSeconds: 5,
+    side: 'white',
+    showNotation: false,
+  },
   sessions: [],
   best: {},
   squares: {},
@@ -103,7 +112,9 @@ export const progressStore = createStore<Record<string, LineProgress>>('opening-
 )
 
 /** Пользовательские курсы (импорт PGN / ручной ввод). */
-export const repertoireStore = createStore<CourseDef[]>('repertoire', [], (raw) => (Array.isArray(raw) ? (raw as CourseDef[]) : []))
+export const repertoireStore = createStore<CourseDef[]>('repertoire', [], (raw) =>
+  Array.isArray(raw) ? (raw as CourseDef[]) : [],
+)
 
 // ---------- Игра с ботом ----------
 
@@ -119,7 +130,7 @@ export interface BotPrefs {
   freeColor: 'w' | 'b' | 'random'
 }
 
-const DEFAULT_BOT_PREFS: BotPrefs = { level: 2, behaviour: 'mixed', courseId: null, freeColor: 'w' }
+const DEFAULT_BOT_PREFS: BotPrefs = { level: 1, behaviour: 'mixed', courseId: null, freeColor: 'w' }
 
 export const botPrefsStore = createStore('bot-prefs', DEFAULT_BOT_PREFS, withDefaults(DEFAULT_BOT_PREFS))
 
@@ -175,7 +186,11 @@ export function recordBotGame(courseId: string | null, outcome: 'win' | 'draw' |
     const base = r ?? { games: 0, wins: 0, draws: 0, losses: 0 }
     return { ...base, games: base.games + 1, [field]: base[field] + 1 }
   }
-  botStatsStore.set((prev) => ({ ...prev, [courseId ?? '_free']: bump(prev[courseId ?? '_free']), _all: bump(prev._all) }))
+  botStatsStore.set((prev) => ({
+    ...prev,
+    [courseId ?? '_free']: bump(prev[courseId ?? '_free']),
+    _all: bump(prev._all),
+  }))
   logActivity('games')
 }
 
@@ -186,6 +201,9 @@ export interface DayActivity {
   lines: number
   /** Партии с ботом (поле появилось позже — в старых данных его нет). */
   games?: number
+  lessons?: number
+  tactics?: number
+  reviews?: number
 }
 
 export const activityStore = createStore<Record<string, DayActivity>>('activity', {})
@@ -200,7 +218,7 @@ export function logActivity(kind: keyof DayActivity, amount = 1) {
 
 /** Всего занятий за день. */
 export function dayTotal(d: DayActivity | undefined): number {
-  return d ? d.coords + d.lines + (d.games ?? 0) : 0
+  return d ? d.coords + d.lines + (d.games ?? 0) + (d.lessons ?? 0) + (d.tactics ?? 0) + (d.reviews ?? 0) : 0
 }
 
 /** Сколько дней подряд (включая сегодня или вчера) были тренировки. */
@@ -217,4 +235,15 @@ export function currentStreak(activity: Record<string, DayActivity>, now = Date.
   return streak
 }
 
-export const ALL_STORES = [settingsStore, coordStore, progressStore, repertoireStore, activityStore, botPrefsStore, botGameStore, botStatsStore]
+export const ALL_STORES = [
+  settingsStore,
+  coordStore,
+  progressStore,
+  repertoireStore,
+  activityStore,
+  botPrefsStore,
+  botGameStore,
+  botStatsStore,
+  learningStore,
+  endingStore,
+]

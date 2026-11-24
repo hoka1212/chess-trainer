@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { DownloadIcon, TrashIcon, UploadIcon } from '../components/icons'
 import { Button, Card, ConfirmButton, PageHeader, Segmented, Toggle } from '../components/ui'
 import { useStore } from '../lib/storage'
+import { learningStore } from '../lib/learning'
+import { endingStore } from '../lib/endgames'
 import {
   activityStore,
   ALL_STORES,
@@ -24,9 +26,12 @@ export function SettingsPage() {
 
   const exportBackup = () => {
     const data = Object.fromEntries(ALL_STORES.map((s) => [s.key, s.get()]))
-    const blob = new Blob([JSON.stringify({ app: 'chess-trainer', version: 1, exportedAt: new Date().toISOString(), data }, null, 2)], {
-      type: 'application/json',
-    })
+    const blob = new Blob(
+      [JSON.stringify({ app: 'chess-trainer', version: 1, exportedAt: new Date().toISOString(), data }, null, 2)],
+      {
+        type: 'application/json',
+      },
+    )
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -49,6 +54,8 @@ export function SettingsPage() {
   }
 
   const resetProgress = () => {
+    learningStore.reset()
+    endingStore.reset()
     progressStore.reset()
     coordStore.set((d) => ({ ...d, sessions: [], best: {}, squares: {} }))
     activityStore.reset()
@@ -92,7 +99,11 @@ export function SettingsPage() {
           })}
         </div>
         <div className="mt-4 space-y-2">
-          <Toggle checked={settings.showNotation} onChange={(showNotation) => set({ showNotation })} label="Подписи клеток (a–h, 1–8) на доске дебютов" />
+          <Toggle
+            checked={settings.showNotation}
+            onChange={(showNotation) => set({ showNotation })}
+            label="Подписи клеток (a–h, 1–8) на доске дебютов"
+          />
           <Toggle checked={settings.animations} onChange={(animations) => set({ animations })} label="Анимация ходов" />
         </div>
       </Card>
@@ -111,14 +122,18 @@ export function SettingsPage() {
             ]}
           />
         </div>
-        <Toggle checked={settings.showComments} onChange={(showComments) => set({ showComments })} label="Показывать комментарии к ходам" />
+        <Toggle
+          checked={settings.showComments}
+          onChange={(showComments) => set({ showComments })}
+          label="Показывать комментарии к ходам"
+        />
       </Card>
 
       <Card className="mt-4">
         <h2 className="mb-1 font-semibold">Данные</h2>
         <p className="mb-3 text-sm text-muted">
-          Прогресс, рекорды и ваш репертуар хранятся в localStorage этого браузера. Сделайте резервную копию, чтобы перенести их на другое
-          устройство.
+          Прогресс, рекорды и ваш репертуар хранятся в localStorage этого браузера. Сделайте резервную копию, чтобы
+          перенести их на другое устройство.
         </p>
         <div className="flex flex-wrap gap-2">
           <Button onClick={exportBackup}>
@@ -147,7 +162,9 @@ export function SettingsPage() {
             <TrashIcon size={16} /> Удалить мои курсы
           </ConfirmButton>
         </div>
-        <p className="mt-2 text-xs text-faint">Сброс прогресса не трогает ваши курсы. Опасные действия подтверждаются повторным нажатием.</p>
+        <p className="mt-2 text-xs text-faint">
+          Сброс прогресса не трогает ваши курсы. Опасные действия подтверждаются повторным нажатием.
+        </p>
         {message && <p className="mt-3 text-sm text-accent">{message}</p>}
       </Card>
     </div>

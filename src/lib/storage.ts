@@ -61,7 +61,7 @@ export function createStore<T>(name: string, initial: T, normalize: (raw: unknow
     key,
     get: () => state,
     set(next) {
-      state = typeof next === 'function' ? (next as (prev: T) => T)(state) : next
+      state = normalize(typeof next === 'function' ? (next as (prev: T) => T)(state) : next)
       safeWrite(key, JSON.stringify(state))
       emit()
     },
@@ -83,7 +83,8 @@ export function useStore<T>(store: Store<T>): T {
 
 /** Объединяет сохранённый объект с объектом по умолчанию (для простых плоских настроек). */
 export function withDefaults<T extends object>(defaults: T) {
-  return (raw: unknown): T => (raw && typeof raw === 'object' && !Array.isArray(raw) ? { ...defaults, ...(raw as Partial<T>) } : defaults)
+  return (raw: unknown): T =>
+    raw && typeof raw === 'object' && !Array.isArray(raw) ? { ...defaults, ...(raw as Partial<T>) } : defaults
 }
 
 /** Ключ дня в локальном времени: 2026-10-28. */

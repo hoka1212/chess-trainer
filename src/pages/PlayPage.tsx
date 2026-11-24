@@ -5,10 +5,21 @@ import { FlagIcon, FlipIcon, LightbulbIcon, PlayIcon, RotateIcon, SettingsIcon, 
 import { MoveList, MoveMarkLegend, type MoveMark } from '../components/MoveList'
 import { Badge, Button, ButtonLink, Card, ConfirmButton, PageHeader, Segmented } from '../components/ui'
 import { useCourses } from '../data'
+import { PRACTICE_HABITS } from '../data/academy'
 import { askBot } from '../engine/client'
 import { BOT_LEVELS, type BotLevel } from '../engine/levels'
 import { buildBook, chooseBookMove, type BookEntry } from '../lib/book'
-import { BEHAVIOURS, botGameInProgress, gameResult, moveColor, replay, START_FEN, startBotGame, theorySummary, uciToSan } from '../lib/botGame'
+import {
+  BEHAVIOURS,
+  botGameInProgress,
+  gameResult,
+  moveColor,
+  replay,
+  START_FEN,
+  startBotGame,
+  theorySummary,
+  uciToSan,
+} from '../lib/botGame'
 import { positionKey, sideToColor, type Course } from '../lib/courses'
 import { moveLabel, ruSan } from '../lib/pgn'
 import { useStore } from '../lib/storage'
@@ -47,7 +58,11 @@ function commitMove(gameId: number, ply: number, uci: string, tag: MoveTag, expe
     } catch {
       return g
     }
-    committed = { ...g, moves: [...g.moves, { uci, san, tag, ...(expected ? { expected } : {}) }], result: gameResult(chess) }
+    committed = {
+      ...g,
+      moves: [...g.moves, { uci, san, tag, ...(expected ? { expected } : {}) }],
+      result: gameResult(chess),
+    }
     return committed
   })
   if (committed?.result) recordResult(committed)
@@ -86,7 +101,9 @@ function PlaySetup({ canReturn, onClose }: { canReturn: boolean; onClose: () => 
   const prefs = useStore(botPrefsStore)
   const stats = useStore(botStatsStore)
   const game = useStore(botGameStore)
-  const [courseId, setCourseId] = useState(() => (courses.some((c) => c.id === prefs.courseId && c.lines.length > 0) ? prefs.courseId! : ''))
+  const [courseId, setCourseId] = useState(() =>
+    courses.some((c) => c.id === prefs.courseId && c.lines.length > 0) ? prefs.courseId! : '',
+  )
   const course = courses.find((c) => c.id === courseId)
   const record = stats._all
 
@@ -157,7 +174,9 @@ function PlaySetup({ canReturn, onClose }: { canReturn: boolean; onClose: () => 
               ]}
             />
           )}
-          <p className="mt-2 text-sm text-faint">{course ? 'Цвет задаёт курс.' : 'В свободной партии цвет выбираете вы.'}</p>
+          <p className="mt-2 text-sm text-faint">
+            {course ? 'Цвет задаёт курс.' : 'В свободной партии цвет выбираете вы.'}
+          </p>
         </Field>
 
         <Field label="Сила бота">
@@ -184,7 +203,13 @@ function PlaySetup({ canReturn, onClose }: { canReturn: boolean; onClose: () => 
         </Field>
 
         <div className="flex flex-wrap gap-2">
-          <ConfirmButton variant="primary" size="lg" onConfirm={start} skipConfirm={!botGameInProgress(game)} confirmLabel="Прервать текущую партию?">
+          <ConfirmButton
+            variant="primary"
+            size="lg"
+            onConfirm={start}
+            skipConfirm={!botGameInProgress(game)}
+            confirmLabel="Прервать текущую партию?"
+          >
             <PlayIcon size={18} /> Начать партию
           </ConfirmButton>
           {canReturn && (
@@ -197,7 +222,8 @@ function PlaySetup({ canReturn, onClose }: { canReturn: boolean; onClose: () => 
       {record && (
         <p className="mt-4 text-sm text-muted">
           Ваш счёт против бота: <span className="text-fg tabular">{record.wins}</span> побед ·{' '}
-          <span className="text-fg tabular">{record.draws}</span> ничьих · <span className="text-fg tabular">{record.losses}</span> поражений
+          <span className="text-fg tabular">{record.draws}</span> ничьих ·{' '}
+          <span className="text-fg tabular">{record.losses}</span> поражений
         </p>
       )}
     </div>
@@ -228,7 +254,7 @@ const STRIP_TONE: Record<Notice['tone'] | 'hint', string> = {
   hint: 'text-info',
 }
 
-const MARK: Partial<Record<MoveTag, MoveMark>> = { book: 'book', mistake: 'mistake', deviation: 'deviation' }
+const MARK: Partial<Record<MoveTag, MoveMark>> = { book: 'book', mistake: 'deviation', deviation: 'deviation' }
 
 function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
   const courses = useCourses()
@@ -278,7 +304,13 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
         if (bookMoves.length) {
           // Первый ход бота всегда по курсу, иначе дебют может просто не возникнуть.
           if (botMovesSoFar > 0 && Math.random() < BEHAVIOURS[game.behaviour].chance) {
-            const res = await askBot({ kind: 'deviate', startFen: START_FEN, moves: ucis, level: game.level, exclude: bookMoves.map((m) => m.uci) })
+            const res = await askBot({
+              kind: 'deviate',
+              startFen: START_FEN,
+              moves: ucis,
+              level: game.level,
+              exclude: bookMoves.map((m) => m.uci),
+            })
             if (res.move) {
               uci = res.move
               tag = 'deviation'
@@ -362,8 +394,8 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
     setBotNotice(null)
     if (tag === 'mistake') {
       setUserNotice({
-        tone: 'bad',
-        text: `По курсу здесь играют ${expected!.map((s) => moveLabel(ply, s)).join(' или ')}. Ваш ход ${ruSan(san)} уводит из теории.`,
+        tone: 'info',
+        text: `Ход ${ruSan(san)} вне записанного репертуара. В курсе здесь ${expected!.map((s) => moveLabel(ply, s)).join(' или ')}. Отклонение от записи само по себе не означает ошибку.`,
         undo: !next.result,
       })
     } else if (tag === 'book') {
@@ -407,7 +439,8 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
 
   const newGame = () => {
     // В свободной партии со случайным цветом цвет разыгрывается заново.
-    const color = !game.courseId && botPrefsStore.get().freeColor === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : game.color
+    const color =
+      !game.courseId && botPrefsStore.get().freeColor === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : game.color
     botGameStore.set({ ...game, id: Date.now(), color, moves: [], hints: 0, result: null })
   }
 
@@ -416,14 +449,19 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
     botGameStore.set((g) => (g && g.id === game.id ? { ...g, hints: g.hints + 1 } : g))
     const fromBook = entry?.user[0]
     if (fromBook) {
-      setHint({ ply, uci: fromBook.uci, text: `По курсу: ${moveLabel(ply, fromBook.san)}${fromBook.comment ? ` — ${fromBook.comment}` : ''}` })
+      setHint({
+        ply,
+        uci: fromBook.uci,
+        text: `По курсу: ${moveLabel(ply, fromBook.san)}${fromBook.comment ? ` — ${fromBook.comment}` : ''}`,
+      })
       return
     }
     setHintBusy(true)
     try {
       const res = await askBot({ kind: 'best', startFen: START_FEN, moves: ucis, timeMs: 900 })
       const san = res.move ? uciToSan(fen, res.move) : null
-      if (res.move && san && botGameStore.get()?.moves.length === ply) setHint({ ply, uci: res.move, text: `Движок советует: ${moveLabel(ply, san)}` })
+      if (res.move && san && botGameStore.get()?.moves.length === ply)
+        setHint({ ply, uci: res.move, text: `Движок советует: ${moveLabel(ply, san)}` })
     } catch {
       setEngineError(true)
     } finally {
@@ -431,7 +469,9 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
     }
   }
 
-  const arrows: Arrow[] = activeHint ? [{ startSquare: activeHint.uci.slice(0, 2), endSquare: activeHint.uci.slice(2, 4), color: HINT_ARROW }] : []
+  const arrows: Arrow[] = activeHint
+    ? [{ startSquare: activeHint.uci.slice(0, 2), endSquare: activeHint.uci.slice(2, 4), color: HINT_ARROW }]
+    : []
   const last = game.moves[ply - 1]
   const summary = theorySummary(game)
   const botName = `Бот · ${BOT_LEVELS[game.level].name}`
@@ -480,11 +520,21 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
   if (!game.result) {
     if (engineError) messages.push({ key: 'error', tone: 'bad', text: 'Движок не ответил.', action: retryButton })
     if (activeHint) messages.push({ key: 'hint', tone: 'hint', text: activeHint.text })
-    if (userNotice) messages.push({ key: 'user', tone: userNotice.tone, text: userNotice.text, action: userNotice.undo && hasUserMove ? undoButton : undefined })
+    if (userNotice)
+      messages.push({
+        key: 'user',
+        tone: userNotice.tone,
+        text: userNotice.text,
+        action: userNotice.undo && hasUserMove ? undoButton : undefined,
+      })
     if (botNotice) messages.push({ key: 'bot', tone: botNotice.tone, text: botNotice.text })
   }
   // В строке над доской (телефон) — самое важное: ошибка в теории важнее комментария к ходу бота.
-  const primary = messages.find((m) => m.key === 'error') ?? messages.find((m) => m.tone === 'bad') ?? messages.find((m) => m.key === 'hint') ?? messages[messages.length - 1]
+  const primary =
+    messages.find((m) => m.key === 'error') ??
+    messages.find((m) => m.tone === 'bad') ??
+    messages.find((m) => m.key === 'hint') ??
+    messages[messages.length - 1]
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -506,18 +556,22 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
         <div className="mb-2 flex h-[4.5rem] items-center gap-2 rounded-xl border border-line bg-surface px-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className={`size-2 shrink-0 rounded-full ${over ? 'bg-faint' : userTurn ? 'bg-accent' : 'animate-pulse bg-faint'}`} />
+              <span
+                className={`size-2 shrink-0 rounded-full ${over ? 'bg-faint' : userTurn ? 'bg-accent' : 'animate-pulse bg-faint'}`}
+              />
               <span className="truncate">{status}</span>
             </div>
-            <p className={`mt-0.5 line-clamp-2 text-xs leading-snug ${primary ? STRIP_TONE[primary.tone] : 'text-faint'}`}>
+            <p
+              className={`mt-0.5 line-clamp-2 text-xs leading-snug ${primary ? STRIP_TONE[primary.tone] : 'text-faint'}`}
+            >
               {primary
                 ? primary.text
                 : game.result
                   ? course
-                    ? `По теории: ${summary.bookMoves}${summary.mistakes.length ? `, ошибок: ${summary.mistakes.length}` : ''}. Итог — ниже.`
+                    ? `По теории: ${summary.bookMoves}${summary.mistakes.length ? `, вне репертуара: ${summary.mistakes.length}` : ''}. Итог — ниже.`
                     : 'Партия окончена.'
                   : course
-                    ? `По теории: ${summary.bookMoves}${summary.mistakes.length ? ` · ошибок: ${summary.mistakes.length}` : ''}`
+                    ? `По теории: ${summary.bookMoves}${summary.mistakes.length ? ` · вне репертуара: ${summary.mistakes.length}` : ''}`
                     : 'Свободная партия'}
             </p>
           </div>
@@ -527,7 +581,13 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
             </Button>
           ) : (
             <div className="flex shrink-0 gap-1">
-              <Button size="sm" onClick={showHint} disabled={!userTurn || hintBusy || !!activeHint} aria-label="Подсказка" title="Подсказка">
+              <Button
+                size="sm"
+                onClick={showHint}
+                disabled={!userTurn || hintBusy || !!activeHint}
+                aria-label="Подсказка"
+                title="Подсказка"
+              >
                 <LightbulbIcon size={16} className={hintBusy ? 'animate-pulse' : ''} />
               </Button>
               <Button size="sm" onClick={undo} disabled={!hasUserMove} aria-label="Ход назад" title="Ход назад">
@@ -556,25 +616,50 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
         </div>
 
         <aside className="flex min-w-0 flex-col gap-3">
+          <details className="coach-panel" open>
+            <summary>Пауза перед ходом</summary>
+            <ol>
+              {PRACTICE_HABITS.map((habit) => (
+                <li key={habit}>{habit}</li>
+              ))}
+            </ol>
+            <p>В учебной партии можно думать без спешки. Сила бота не равна рейтингу chess.com.</p>
+            {game.moves.length > 0 && (
+              <ButtonLink to="/review" size="sm">
+                Разобрать эту партию
+              </ButtonLink>
+            )}
+          </details>
           <Card className="flex flex-col p-4">
             <div className="flex items-center gap-2 font-semibold">
-              <span className={`size-2.5 shrink-0 rounded-full ${over ? 'bg-faint' : userTurn ? 'bg-accent' : 'animate-pulse bg-faint'}`} />
+              <span
+                className={`size-2.5 shrink-0 rounded-full ${over ? 'bg-faint' : userTurn ? 'bg-accent' : 'animate-pulse bg-faint'}`}
+              />
               {status}
             </div>
             {course && (
               <p className="mt-1 text-sm text-muted tabular">
-                По теории: {summary.bookMoves} {summary.mistakes.length > 0 && <span className="text-danger">· ошибок: {summary.mistakes.length}</span>}
+                По теории: {summary.bookMoves}{' '}
+                {summary.mistakes.length > 0 && (
+                  <span className="text-danger">· вне репертуара: {summary.mistakes.length}</span>
+                )}
                 {game.hints > 0 && <span className="text-faint"> · подсказок: {game.hints}</span>}
               </p>
             )}
 
             {/* Область сообщений фиксированной высоты: новые сообщения не сдвигают кнопки и список ходов. */}
-            <div className="scrollbar-thin mt-2 flex h-[9.5rem] flex-col gap-2 overflow-y-auto overscroll-contain" aria-live="polite">
+            <div
+              className="scrollbar-thin mt-2 flex h-[9.5rem] flex-col gap-2 overflow-y-auto overscroll-contain"
+              aria-live="polite"
+            >
               {game.result ? (
                 <GameReport game={game} course={course} />
               ) : messages.length ? (
                 messages.map((m) => (
-                  <div key={m.key} className={`rounded-lg px-3 py-2 text-sm leading-relaxed ${m.tone === 'hint' ? 'bg-info/12 text-info' : NOTICE_TONE[m.tone]}`}>
+                  <div
+                    key={m.key}
+                    className={`rounded-lg px-3 py-2 text-sm leading-relaxed ${m.tone === 'hint' ? 'bg-info/12 text-info' : NOTICE_TONE[m.tone]}`}
+                  >
                     {m.text}
                     {m.action && <> {m.action}</>}
                   </div>
@@ -606,21 +691,43 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
                 </>
               ) : (
                 <>
-                  <Button size="sm" onClick={showHint} disabled={!userTurn || hintBusy || !!activeHint} aria-busy={hintBusy}>
+                  <Button
+                    size="sm"
+                    onClick={showHint}
+                    disabled={!userTurn || hintBusy || !!activeHint}
+                    aria-busy={hintBusy}
+                  >
                     <LightbulbIcon size={16} className={hintBusy ? 'animate-pulse' : ''} /> Подсказка
                   </Button>
                   <Button size="sm" onClick={undo} disabled={!hasUserMove}>
                     <UndoIcon size={16} /> Ход назад
                   </Button>
-                  <ConfirmButton size="sm" variant="ghost" onConfirm={resign} disabled={!hasUserMove} confirmLabel="Сдаться?">
+                  <ConfirmButton
+                    size="sm"
+                    variant="ghost"
+                    onConfirm={resign}
+                    disabled={!hasUserMove}
+                    confirmLabel="Сдаться?"
+                  >
                     <FlagIcon size={16} /> Сдаться
                   </ConfirmButton>
                 </>
               )}
-              <Button size="sm" variant="ghost" onClick={() => setOrientation((o) => (o === 'white' ? 'black' : 'white'))} aria-label="Перевернуть доску">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setOrientation((o) => (o === 'white' ? 'black' : 'white'))}
+                aria-label="Перевернуть доску"
+              >
                 <FlipIcon size={16} />
               </Button>
-              <Button size="sm" variant="ghost" onClick={onSetup} aria-label="Новая партия с другими настройками" title="Новая партия с другими настройками">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onSetup}
+                aria-label="Новая партия с другими настройками"
+                title="Новая партия с другими настройками"
+              >
                 <SettingsIcon size={16} />
               </Button>
             </div>
@@ -662,7 +769,10 @@ function GameView({ game, onSetup }: { game: BotGame; onSetup: () => void }) {
 
 /** Итог партии по теории курса. */
 function GameReport({ game, course }: { game: BotGame; course: Course | null }) {
-  if (!course) return <p className="text-sm text-muted">Сыграйте ещё одну партию или выберите дебют, чтобы потренировать теорию.</p>
+  if (!course)
+    return (
+      <p className="text-sm text-muted">Сыграйте ещё одну партию или выберите дебют, чтобы потренировать теорию.</p>
+    )
   const s = theorySummary(game)
   const items: ReactNode[] = [
     <>
@@ -672,12 +782,14 @@ function GameReport({ game, course }: { game: BotGame; course: Course | null }) 
   for (const { index, move } of s.mistakes.slice(0, 3)) {
     items.push(
       <span className="text-[#f08a80]">
-        {moveLabel(index, move.san)} — в курсе {move.expected?.map((x) => ruSan(x)).join(' или ')}
+        {moveLabel(index, move.san)} — вне репертуара; в курсе {move.expected?.map((x) => ruSan(x)).join(' или ')}
       </span>,
     )
   }
-  if (s.deviation >= 0) items.push(<>Соперник свернул с теории ходом {moveLabel(s.deviation, game.moves[s.deviation].san)}</>)
-  else if (s.lastBook >= 0) items.push(<>Теория курса закончилась после хода {moveLabel(s.lastBook, game.moves[s.lastBook].san)}</>)
+  if (s.deviation >= 0)
+    items.push(<>Соперник свернул с теории ходом {moveLabel(s.deviation, game.moves[s.deviation].san)}</>)
+  else if (s.lastBook >= 0)
+    items.push(<>Теория курса закончилась после хода {moveLabel(s.lastBook, game.moves[s.lastBook].san)}</>)
   return (
     <div className="rounded-lg bg-surface-2 px-3 py-2 text-sm text-muted">
       <ul className="space-y-1">

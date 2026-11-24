@@ -31,7 +31,7 @@ export function OpeningsPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader
-        title="Дебюты и гамбиты"
+        title="Библиотека дебютов"
         subtitle="Выберите курс: изучите линии с подсказками, а затем закрепите их в режиме тренировки."
         actions={
           <ButtonLink to="/openings/new" variant="primary">
@@ -40,6 +40,17 @@ export function OpeningsPage() {
         }
       />
 
+      <div className="method-strip">
+        <p>
+          <strong>Дополнение к учебному маршруту.</strong>
+          <br />
+          Для начала достаточно центра, развития и безопасности короля. Выберите один спокойный дебют и понимайте его
+          идеи; большие репертуары и гамбиты можно изучать позже.
+        </p>
+        <Link to="/learn/centre" className="studio-button secondary">
+          Основы дебюта
+        </Link>
+      </div>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <Segmented<Side | 'all'>
           value={side}
@@ -84,7 +95,9 @@ export function OpeningsPage() {
 
       {/* Высота с запасом: при фильтрации короткий список не «схлопывает» страницу. */}
       <section className="min-h-[60svh]">
-        {custom.length > 0 && <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">База курсов</h2>}
+        {custom.length > 0 && (
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">База курсов</h2>
+        )}
         {builtIn.length === 0 ? (
           <p className="text-muted">Ничего не найдено.</p>
         ) : (
@@ -100,7 +113,9 @@ export function OpeningsPage() {
 }
 
 function CourseCard({ course, progress }: { course: Course; progress: ReturnType<typeof progressStore.get> }) {
-  const mastery = course.lines.length ? course.lines.reduce((s, l) => s + lineMastery(progress[l.key]), 0) / course.lines.length : 0
+  const mastery = course.lines.length
+    ? course.lines.reduce((s, l) => s + lineMastery(progress[l.key]), 0) / course.lines.length
+    : 0
   const due = course.lines.filter((l) => isDue(progress[l.key])).length
   const traps = course.lines.filter((l) => l.trap).length
   return (
